@@ -109,7 +109,7 @@ for columna in nombres_columnas:
     print("  ", columna, ":", round(porcentaje, 1), "%")
     if porcentaje > MAX_FALTANTES:
         columnas_quitar.append(columna)
-
+ 
 tabla = tabla.drop(columns=columnas_quitar)
 print("Columnas eliminadas por faltar demasiados datos:", columnas_quitar)
 
