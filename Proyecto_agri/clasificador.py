@@ -1,7 +1,7 @@
 """
 04 - RANDOM FOREST PARA PREDECIR UNA CATEGORÍA (bueno / malo)
 
-Usa los archivos que crea 02_dividir_datos.py:
+Usa los archivos que crea dividir_datos.py:
   datos_entrenamiento.csv  y  datos_prueba.csv
 
 Qué hace:
@@ -18,8 +18,7 @@ Cuando tengas la base de cosechas, cambia COLUMNA_BASE (por ejemplo a
 Funciona con cualquier estación: no tiene ningún dato de Amealco escrito
 (los umbrales se calculan con los datos de cada estación).
 """
-from pathlib import Path
-
+import os
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
@@ -30,12 +29,15 @@ from sklearn.model_selection import cross_val_predict
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
+# Trabajar siempre en la carpeta donde está ESTE archivo: así lee y guarda ahí
+# aunque lo ejecutes desde otra carpeta (por ejemplo desde la raíz del proyecto).
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 # ----------------------------------------------------------------------
 # CONFIGURACIÓN
 # ----------------------------------------------------------------------
-CARPETA_PROYECTO = Path(__file__).resolve().parent
-ARCHIVO_ENTRENAMIENTO = CARPETA_PROYECTO / "datos_entrenamiento.csv"
-ARCHIVO_PRUEBA = CARPETA_PROYECTO / "datos_prueba.csv"
+ARCHIVO_ENTRENAMIENTO = "datos_entrenamiento.csv"
+ARCHIVO_PRUEBA = "datos_prueba.csv"
 
 COLUMNA_BASE = "lluvia_total"     # el número con el que se decide si es bueno o malo
 EXCLUIR = ["lluvia_max_24h"]      # columnas que NO se usan para predecir
@@ -216,12 +218,12 @@ print("\nAlgunos casos de prueba:")
 print(ejemplo[columnas_ejemplo].to_string(index=False))
 
 # ----------------------------------------------------------------------
-# 7. GUARDAR los datos con su categoría (los usa 05_ajustar_modelo.py)
+# 7. GUARDAR los datos con su categoría (los usa ajustar_model.py)
 # ----------------------------------------------------------------------
 entrenamiento_clasif = X_train.copy()
 entrenamiento_clasif["categoria"] = y_train
 prueba_clasif = X_test.copy()
 prueba_clasif["categoria"] = y_test
-entrenamiento_clasif.to_csv(CARPETA_PROYECTO / "datos_entrenamiento_clasificacion.csv", index=False)
-prueba_clasif.to_csv(CARPETA_PROYECTO / "datos_prueba_clasificacion.csv", index=False)
+entrenamiento_clasif.to_csv("datos_entrenamiento_clasificacion.csv", index=False)
+prueba_clasif.to_csv("datos_prueba_clasificacion.csv", index=False)
 print("\nGuardados: datos_entrenamiento_clasificacion.csv y datos_prueba_clasificacion.csv")

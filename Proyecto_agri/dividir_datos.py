@@ -1,7 +1,7 @@
 """
 SEPARAR DATOS EN ENTRENAMIENTO Y PRUEBA (train_test_split, capítulo 2)
 
-Lee datos_limpios.csv (lo crea limpieza_datos_simple.py) y lo divide en:
+Lee datos_limpios.csv (lo crea limpieza_de_datos.py) y lo divide en:
   - datos_entrenamiento.csv : 80 % de las filas, con ellas el modelo aprende
   - datos_prueba.csv        : 20 % de las filas, se guardan sin tocar para
                               examinar al modelo al final
@@ -9,16 +9,18 @@ Lee datos_limpios.csv (lo crea limpieza_datos_simple.py) y lo divide en:
 Los siguientes archivos (el del Random Forest, etc.) leerán estos dos
 archivos, así todos trabajan con la misma división.
 """
-from pathlib import Path
-
+import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
+
+# Trabajar siempre en la carpeta donde está ESTE archivo: así lee y guarda ahí
+# aunque lo ejecutes desde otra carpeta (por ejemplo desde la raíz del proyecto).
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # ----------------------------------------------------------------------
 # CONFIGURACIÓN
 # ----------------------------------------------------------------------
-CARPETA_PROYECTO = Path(__file__).resolve().parent
-ARCHIVO = CARPETA_PROYECTO / "datos_limpios.csv"
+ARCHIVO = "datos_limpios.csv"
 OBJETIVO = "lluvia_total"   # lo que queremos predecir (luego será el rendimiento)
 TAMANO_PRUEBA = 0.2         # 0.2 = 20 % de las filas van a prueba
 MINIMO_FILAS = 75           # con menos meses con datos no tiene sentido entrenar (75 meses = 6 años)
@@ -31,10 +33,8 @@ print("Filas totales:", len(tabla))
 
 # Si esta estación no trae la columna que queremos predecir, no se puede seguir
 if OBJETIVO not in tabla.columns:
-  raise SystemExit(
-    f"No existe la columna {OBJETIVO} en {ARCHIVO}. Columnas que sí hay: "
-    f"{', '.join(tabla.columns)}. Prueba con otra estación o cambia OBJETIVO."
-  )
+    raise SystemExit("No existe la columna " + OBJETIVO + " en " + ARCHIVO + ". Columnas que sí hay: " +
+                     ", ".join(tabla.columns) + ". Prueba con otra estación o cambia OBJETIVO.")
 
 # Si a una fila le falta el valor que queremos predecir, no sirve ni para
 # aprender ni para examinar, así que se quita (no se puede rellenar: sería
@@ -74,6 +74,6 @@ print("  prueba:       ", test_set["anio"].min(), "a", test_set["anio"].max())
 # ----------------------------------------------------------------------
 # 4. GUARDAR
 # ----------------------------------------------------------------------
-train_set.to_csv(CARPETA_PROYECTO / "datos_entrenamiento.csv", index=False)
-test_set.to_csv(CARPETA_PROYECTO / "datos_prueba.csv", index=False)
+train_set.to_csv("datos_entrenamiento.csv", index=False)
+test_set.to_csv("datos_prueba.csv", index=False)
 print("\nGuardados: datos_entrenamiento.csv y datos_prueba.csv")

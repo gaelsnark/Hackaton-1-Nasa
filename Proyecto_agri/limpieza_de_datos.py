@@ -9,7 +9,7 @@ Uso: pon este archivo en la misma carpeta que el .txt de la estación y ejecúta
 Para otra región: descarga el archivo MENSUAL de esa estación (su nombre empieza
 con "mes", por ejemplo mes22016.txt), ponlo en la misma carpeta y cambia ARCHIVO.
 """
-from pathlib import Path
+import os
 
 import numpy as np
 import pandas as pd
@@ -18,11 +18,14 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
+# Trabajar siempre en la carpeta donde está ESTE archivo: así lee y guarda ahí
+# aunque lo ejecutes desde otra carpeta (por ejemplo desde la raíz del proyecto).
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 # ----------------------------------------------------------------------
 # CONFIGURACIÓN
 # ----------------------------------------------------------------------
-CARPETA_PROYECTO = Path(__file__).resolve().parent
-ARCHIVO = CARPETA_PROYECTO / "mes22001.txt"  # archivo MENSUAL de la estación (cámbialo para usar otra región)
+ARCHIVO = "mes22001.txt"   # archivo MENSUAL de la estación (cámbialo para usar otra región)
 MAX_FALTANTES = 60   # si a una columna le falta más de este porcentaje, se elimina
 
 MESES = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN",
@@ -44,9 +47,10 @@ nombres_columnas = list(TABLAS.values())
 # ----------------------------------------------------------------------
 # 1. LEER EL .TXT
 # ----------------------------------------------------------------------
-# Primero revisamos que el archivo de datos exista junto al script
-if not ARCHIVO.is_file():
-    raise SystemExit(f"No encuentro el archivo de datos: {ARCHIVO}")
+# Primero revisamos que el archivo esté en la carpeta donde se ejecuta el programa
+if not os.path.exists(ARCHIVO):
+    raise SystemExit("No encuentro el archivo " + ARCHIVO + " en la carpeta " + os.getcwd() +
+                     ". Ponlo ahí, o abre la terminal en la carpeta donde lo guardaste.")
 
 # open() abre el archivo y readlines() lo convierte en una lista de textos,
 # uno por cada línea. Los acentos pueden venir en dos formatos: probamos "utf-8"
@@ -98,11 +102,9 @@ for linea in lineas:
 
 # Revisar qué se encontró: así notas enseguida si el archivo no es del tipo correcto
 if len(datos) == 0:
-    raise SystemExit(
-        f"No encontré ninguna tabla de datos en {ARCHIVO}. ¿Es el archivo "
-        "MENSUAL ('Estadística mensual', su nombre empieza con mes)? Los archivos de "
-        "'Normales climatológicas' o 'Diario' tienen otro formato y este programa no los lee."
-    )
+    raise SystemExit("No encontré ninguna tabla de datos en " + ARCHIVO + ". ¿Es el archivo "
+                     "MENSUAL ('Estadística mensual', su nombre empieza con mes)? Los archivos de "
+                     "'Normales climatológicas' o 'Diario' tienen otro formato y este programa no los lee.")
 
 print("Tablas encontradas en el archivo:", len(tablas_encontradas), "de", len(TABLAS))
 faltan = []
@@ -194,11 +196,9 @@ preparado = pd.DataFrame(matriz, columns=full_pipeline.get_feature_names_out())
 # ----------------------------------------------------------------------
 # 5. GUARDAR
 # ----------------------------------------------------------------------
-RUTA_LIMPIOS = CARPETA_PROYECTO / "datos_limpios.csv"
-RUTA_PREPARADOS = CARPETA_PROYECTO / "datos_preparados.csv"
-tabla.to_csv(RUTA_LIMPIOS, index=False)
-preparado.to_csv(RUTA_PREPARADOS, index=False)
+tabla.to_csv("datos_limpios.csv", index=False)
+preparado.to_csv("datos_preparados.csv", index=False)
 
-print("Datos limpios:    ", tabla.shape, "->", RUTA_LIMPIOS)
-print("Datos preparados: ", preparado.shape, "->", RUTA_PREPARADOS)
+print("Datos limpios:    ", tabla.shape, "-> datos_limpios.csv")
+print("Datos preparados: ", preparado.shape, "-> datos_preparados.csv")
 print("Vacíos que quedan tras el pipeline:", int(preparado.isna().sum().sum()))

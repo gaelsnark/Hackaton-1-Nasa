@@ -11,8 +11,8 @@ ENTRENAMIENTO. Al final, el modelo ajustado se examina con los datos de PRUEBA
 (que no se usaron para elegir nada) y se compara con el modelo sin ajustar.
 
 Qué modelo ajusta (cambia TIPO):
-  "regresion"     -> el de 03 (predice un número)   lee los CSV de 02_dividir_datos.py
-  "clasificacion" -> el de 04 (bueno / malo)        lee los CSV de 04_clasificador_forest.py
+  "regresion"     -> el de 03 (predice un número)   lee los CSV de dividir_datos.py
+  "clasificacion" -> el de 04 (bueno / malo)        lee los CSV de clasificador_forest.py
 
 Cómo busca (cambia METODO):
   "grid"      -> GridSearchCV: prueba TODAS las combinaciones de unas listas
@@ -23,7 +23,7 @@ Cómo busca (cambia METODO):
 Funciona con cualquier estación: no tiene ningún dato de una región escrito.
 Puede tardar uno o dos minutos: entrena el bosque muchas veces.
 """
-from pathlib import Path
+import os
 import time
 
 import joblib
@@ -38,6 +38,10 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
+# Trabajar siempre en la carpeta donde está ESTE archivo: así lee y guarda ahí
+# aunque lo ejecutes desde otra carpeta (por ejemplo desde la raíz del proyecto).
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 # ----------------------------------------------------------------------
 # CONFIGURACIÓN
 # ----------------------------------------------------------------------
@@ -48,7 +52,6 @@ EXCLUIR = ["lluvia_max_24h"]  # solo para "regresion": igual que en 03
 VALIDACIONES = 5            # en cuántas partes se divide el entrenamiento (cv=5, como en el repo)
 PRUEBAS_ALEATORIO = 20      # cuántas combinaciones prueba "aleatorio"
 MINIMO_FILAS = 60           # con menos filas de entrenamiento no tiene sentido ajustar
-CARPETA_PROYECTO = Path(__file__).resolve().parent
 
 if TIPO not in ("regresion", "clasificacion"):
     raise SystemExit('TIPO debe ser "regresion" o "clasificacion".')
@@ -59,17 +62,18 @@ if METODO not in ("grid", "aleatorio"):
 # 1. LEER LOS DATOS (ya separados en entrenamiento y prueba)
 # ----------------------------------------------------------------------
 if TIPO == "regresion":
-    archivo_train = CARPETA_PROYECTO / "datos_entrenamiento.csv"
-    archivo_test = CARPETA_PROYECTO / "datos_prueba.csv"
-    paso_previo = "02_dividir_datos.py"
+    archivo_train = "datos_entrenamiento.csv"
+    archivo_test = "datos_prueba.csv"
+    paso_previo = "dividir_datos.py"
 else:
-    archivo_train = CARPETA_PROYECTO / "datos_entrenamiento_clasificacion.csv"
-    archivo_test = CARPETA_PROYECTO / "datos_prueba_clasificacion.csv"
-    paso_previo = "04_clasificador_forest.py"
+    archivo_train = "datos_entrenamiento_clasificacion.csv"
+    archivo_test = "datos_prueba_clasificacion.csv"
+    paso_previo = "clasificador_forest.py"
 
 for archivo in [archivo_train, archivo_test]:
-    if not archivo.is_file():
-        raise SystemExit(f"No encuentro {archivo}. Primero corre {paso_previo} en Proyecto_agri.")
+    if not os.path.exists(archivo):
+        raise SystemExit("No encuentro " + archivo + ". Primero corre " + paso_previo +
+                         " (en esta misma carpeta).")
 
 train_set = pd.read_csv(archivo_train)
 test_set = pd.read_csv(archivo_test)
@@ -257,6 +261,5 @@ else:
 # Para usarlo después sin volver a entrenar:  modelo = joblib.load("archivo.pkl")
 # ----------------------------------------------------------------------
 nombre_archivo = "modelo_ajustado_" + TIPO + ".pkl"
-ruta_modelo = CARPETA_PROYECTO / nombre_archivo
-joblib.dump(modelo_ajustado, ruta_modelo)
-print("\nModelo ajustado guardado en", ruta_modelo)
+joblib.dump(modelo_ajustado, nombre_archivo)
+print("\nModelo ajustado guardado en", nombre_archivo)

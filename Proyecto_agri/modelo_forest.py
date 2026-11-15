@@ -1,7 +1,7 @@
 """
 RANDOM FOREST PARA PREDECIR UN NÚMERO (paso 03)
 
-Usa los dos archivos que crea 02_dividir_datos.py:
+Usa los dos archivos que crea dividir_datos.py:
   - datos_entrenamiento.csv : con ellos el modelo aprende
   - datos_prueba.csv        : con ellos se examina (no se tocan antes)
 
@@ -12,8 +12,7 @@ IMPORTANTE: tus datos de CONAGUA no traen rendimiento de cultivos.
 Para probar el código el objetivo es la lluvia total del mes.
 Cuando tengas la base de cosechas, cambias OBJETIVO (y EXCLUIR).
 """
-from pathlib import Path
-
+import os
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
@@ -24,29 +23,33 @@ from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
+# Trabajar siempre en la carpeta donde está ESTE archivo: así lee y guarda ahí
+# aunque lo ejecutes desde otra carpeta (por ejemplo desde la raíz del proyecto).
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 # ----------------------------------------------------------------------
-# CONFIGURACIÓN (OBJETIVO debe ser igual que en 02_dividir_datos.py)
+# CONFIGURACIÓN (OBJETIVO debe ser igual que en dividir_datos.py)
 # ----------------------------------------------------------------------
-CARPETA_PROYECTO = Path(__file__).resolve().parent
-ARCHIVO_ENTRENAMIENTO = CARPETA_PROYECTO / "datos_entrenamiento.csv"
-ARCHIVO_PRUEBA = CARPETA_PROYECTO / "datos_prueba.csv"
-OBJETIVO = "lluvia_total"       # el número que queremos predecir
+ARCHIVO_ENTRENAMIENTO = "datos_entrenamiento.csv"
+ARCHIVO_PRUEBA = "datos_prueba.csv"
+OBJETIVO = "lluvia_total"          # el número que queremos predecir
 EXCLUIR = ["lluvia_max_24h"]       # columnas que NO usamos para predecir
 # (lluvia_max_24h es parte de la lluvia total del mes: si la dejáramos,
 #  el modelo "haría trampa" porque ya conocería casi la respuesta)
 
 # ----------------------------------------------------------------------
-# 1. LEER LOS DATOS YA SEPARADOS POR 02_dividir_datos.py
+# 1. LEER LOS DATOS YA SEPARADOS POR dividir_datos.py
 # ----------------------------------------------------------------------
 train_set = pd.read_csv(ARCHIVO_ENTRENAMIENTO)
 test_set = pd.read_csv(ARCHIVO_PRUEBA)
 print("Filas de entrenamiento:", len(train_set))
 print("Filas de prueba:       ", len(test_set))
 
-# Separamos, en cada grupo, los datos para predecir (X) y la respuesta (y)
-X_train = train_set.drop(columns=[OBJETIVO] + EXCLUIR)
+# Separamos, en cada grupo, los datos para predecir (X) y la respuesta (y).
+# errors="ignore" = si alguna columna de EXCLUIR no existe en esta estación, no pasa nada.
+X_train = train_set.drop(columns=[OBJETIVO] + EXCLUIR, errors="ignore")
 y_train = train_set[OBJETIVO].copy()
-X_test = test_set.drop(columns=[OBJETIVO] + EXCLUIR)
+X_test = test_set.drop(columns=[OBJETIVO] + EXCLUIR, errors="ignore")
 y_test = test_set[OBJETIVO].copy()
 
 # ----------------------------------------------------------------------
