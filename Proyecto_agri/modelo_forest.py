@@ -12,6 +12,8 @@ IMPORTANTE: tus datos de CONAGUA no traen rendimiento de cultivos.
 Para probar el código el objetivo es la lluvia total del mes.
 Cuando tengas la base de cosechas, cambias OBJETIVO (y EXCLUIR).
 """
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
@@ -25,9 +27,10 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 # ----------------------------------------------------------------------
 # CONFIGURACIÓN (OBJETIVO debe ser igual que en 02_dividir_datos.py)
 # ----------------------------------------------------------------------
-ARCHIVO_ENTRENAMIENTO = "datos_entrenamiento.csv"
-ARCHIVO_PRUEBA = "datos_prueba.csv"
-OBJETIVO = "lluvia_total"          # el número que queremos predecir
+CARPETA_PROYECTO = Path(__file__).resolve().parent
+ARCHIVO_ENTRENAMIENTO = CARPETA_PROYECTO / "datos_entrenamiento.csv"
+ARCHIVO_PRUEBA = CARPETA_PROYECTO / "datos_prueba.csv"
+OBJETIVO = "lluvia_total"       # el número que queremos predecir
 EXCLUIR = ["lluvia_max_24h"]       # columnas que NO usamos para predecir
 # (lluvia_max_24h es parte de la lluvia total del mes: si la dejáramos,
 #  el modelo "haría trampa" porque ya conocería casi la respuesta)
