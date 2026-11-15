@@ -1,56 +1,59 @@
 """
-RANDOM FOREST PARA PREDECIR UN NÚMERO (versión de prueba)
+RANDOM FOREST PARA PREDECIR UN NÚMERO (paso 03)
 
-Usa el archivo datos_limpios.csv que crea limpieza_datos_simple.py.
+Usa los dos archivos que crea dividir_datos.py:
+  - datos_entrenamiento.csv : con ellos el modelo aprende
+  - datos_prueba.csv        : con ellos se examina (no se tocan antes)
+
 Sigue el patrón del capítulo 2 de handson-ml2:
-  separar datos -> Pipeline (preparación + RandomForestRegressor) -> evaluar con RMSE
+  Pipeline (preparación + RandomForestRegressor) -> entrenar -> evaluar con RMSE
 
 IMPORTANTE: tus datos de CONAGUA no traen rendimiento de cultivos.
-Para probar el código usamos como objetivo la lluvia total del mes.
-Cuando tengas la base de cosechas, solo cambias OBJETIVO (y la lista de EXCLUIR).
+Para probar el código el objetivo es la lluvia total del mes.
+Cuando tengas la base de cosechas, cambias OBJETIVO (y EXCLUIR).
 """
+import os
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
+# Trabajar siempre en la carpeta donde está ESTE archivo: así lee y guarda ahí
+# aunque lo ejecutes desde otra carpeta (por ejemplo desde la raíz del proyecto).
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 # ----------------------------------------------------------------------
-# CONFIGURACIÓN
+# CONFIGURACIÓN (OBJETIVO debe ser igual que en dividir_datos.py)
 # ----------------------------------------------------------------------
-ARCHIVO = "datos_limpios.csv"
+ARCHIVO_ENTRENAMIENTO = "datos_entrenamiento.csv"
+ARCHIVO_PRUEBA = "datos_prueba.csv"
 OBJETIVO = "lluvia_total"          # el número que queremos predecir
 EXCLUIR = ["lluvia_max_24h"]       # columnas que NO usamos para predecir
 # (lluvia_max_24h es parte de la lluvia total del mes: si la dejáramos,
 #  el modelo "haría trampa" porque ya conocería casi la respuesta)
 
 # ----------------------------------------------------------------------
-# 1. LEER DATOS
+# 1. LEER LOS DATOS YA SEPARADOS POR dividir_datos.py
 # ----------------------------------------------------------------------
-tabla = pd.read_csv(ARCHIVO)
+train_set = pd.read_csv(ARCHIVO_ENTRENAMIENTO)
+test_set = pd.read_csv(ARCHIVO_PRUEBA)
+print("Filas de entrenamiento:", len(train_set))
+print("Filas de prueba:       ", len(test_set))
 
-# Al objetivo no se le pueden rellenar vacíos (sería inventar la respuesta),
-# así que quitamos las filas donde falta.
-tabla = tabla.dropna(subset=[OBJETIVO])
-print("Filas disponibles:", len(tabla))
-
-# ----------------------------------------------------------------------
-# 2. SEPARAR ENTRENAMIENTO Y PRUEBA (train_test_split, capítulo 2)
-# ----------------------------------------------------------------------
-# El modelo aprende con el 80 % y se examina con el 20 % que nunca vio.
-train_set, test_set = train_test_split(tabla, test_size=0.2, random_state=42)
-
-X_train = train_set.drop(columns=[OBJETIVO] + EXCLUIR)   # datos para predecir
-y_train = train_set[OBJETIVO].copy()                      # la respuesta correcta
-X_test = test_set.drop(columns=[OBJETIVO] + EXCLUIR)
+# Separamos, en cada grupo, los datos para predecir (X) y la respuesta (y).
+# errors="ignore" = si alguna columna de EXCLUIR no existe en esta estación, no pasa nada.
+X_train = train_set.drop(columns=[OBJETIVO] + EXCLUIR, errors="ignore")
+y_train = train_set[OBJETIVO].copy()
+X_test = test_set.drop(columns=[OBJETIVO] + EXCLUIR, errors="ignore")
 y_test = test_set[OBJETIVO].copy()
 
 # ----------------------------------------------------------------------
-# 3. PIPELINE: preparación + Random Forest
+# 2. PIPELINE: preparación + Random Forest
 # ----------------------------------------------------------------------
 num_attribs = []
 cat_attribs = []
@@ -70,17 +73,18 @@ preparacion = ColumnTransformer([
     ("cat", OneHotEncoder(sparse_output=False, handle_unknown="ignore"), cat_attribs),
 ])
 
-# Un solo objeto que prepara los datos Y predice (así lo hace el repo en
-# full_pipeline_with_predictor). n_estimators=100 = un bosque de 100 árboles.
+# Un solo objeto que prepara los datos Y predice (como full_pipeline_with_predictor
+# del capítulo 2). n_estimators=100 = un bosque de 100 árboles.
 modelo = Pipeline([
     ("preparacion", preparacion),
     ("bosque", RandomForestRegressor(n_estimators=100, random_state=42)),
 ])
 
+# fit = el modelo aprende. Solo ve los datos de ENTRENAMIENTO.
 modelo.fit(X_train, y_train)
 
 # ----------------------------------------------------------------------
-# 4. EVALUAR
+# 3. EVALUAR
 # ----------------------------------------------------------------------
 # RMSE = error típico del modelo, en las mismas unidades que el objetivo (mm).
 
@@ -94,7 +98,7 @@ scores = cross_val_score(modelo, X_train, y_train,
                          scoring="neg_mean_squared_error", cv=10)
 rmse_cv = np.sqrt(-scores)
 
-# c) Con el 20 % de prueba, que no se tocó hasta ahora (el resultado más honesto)
+# c) Con los datos de PRUEBA, que no se usaron para aprender (el resultado más honesto)
 pred_test = modelo.predict(X_test)
 rmse_test = np.sqrt(mean_squared_error(y_test, pred_test))
 
@@ -107,12 +111,12 @@ print("\nPredecimos:", OBJETIVO, "(promedio real:", round(y_train.mean(), 1), ")
 print("Columnas usadas para predecir:", list(X_train.columns))
 print("\nRMSE en entrenamiento:          ", round(rmse_train, 1))
 print("RMSE validación cruzada (media):", round(rmse_cv.mean(), 1))
-print("RMSE en prueba (20 % separado): ", round(rmse_test, 1))
+print("RMSE en prueba:                 ", round(rmse_test, 1))
 print("RMSE de siempre responder el promedio:", round(rmse_promedio, 1))
 print("R² en prueba:", round(modelo.score(X_test, y_test), 3))
 
 # ----------------------------------------------------------------------
-# 5. EJEMPLO: comparar algunas predicciones con la realidad
+# 4. EJEMPLO: comparar algunas predicciones con la realidad
 # ----------------------------------------------------------------------
 ejemplo = X_test.head(8).copy()
 ejemplo["real"] = y_test.head(8)
